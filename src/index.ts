@@ -3,6 +3,7 @@ import { Octokit } from "@octokit/rest";
 import simpleGit from "simple-git";
 import fs from "fs";
 import path from "path";
+import open from "open";
 
 const program = new Command();
 
@@ -57,4 +58,10 @@ async function prepareAndPushFiles(username: string, repoUrl: string) {
     await git.push("origin", branchName);
 
     return branchName;
+}
+
+async function openPullRequest(username: string, branchName: string) {
+    const prUrl = `https://github.com/${username}/${options.name}/compare/${branchName}?expand=1`;
+    console.log(`🌐 Pull request ready: ${prUrl}`);
+    await open(prUrl);
 }
