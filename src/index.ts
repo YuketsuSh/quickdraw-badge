@@ -1,5 +1,8 @@
 import { Command } from "commander";
 import { Octokit } from "@octokit/rest";
+import simpleGit from "simple-git";
+import fs from "fs";
+import path from "path";
 
 const program = new Command();
 
@@ -32,4 +35,26 @@ async function createRepo() {
     });
 
     return { username, repoUrl: `https://github.com/${username}/${options.name}.git` };
+}
+
+async function prepareAndPushFiles(username: string, repoUrl: string) {
+    const branchName = "quickdraw-branch";
+    const tempDir = path.join(process.cwd(), options.name);
+    const git = simpleGit();
+
+    console.log("📁 Cloning repo...");
+    await git.clone(repoUrl);
+    process.chdir(tempDir);
+
+    console.log("🌱 Creating branch...");
+    await git.checkoutLocalBranch(branchName);
+
+    console.log("📄 Adding README...");
+    fs.writeFileSync("README.md", `# Quickdraw Badge 🚀\nGenerated at ${new Date().toISOString()}\n`);
+
+    await git.add(".");
+    await git.commit("Add README for Quickdraw badge");
+    await git.push("origin", branchName);
+
+    return branchName;
 }
