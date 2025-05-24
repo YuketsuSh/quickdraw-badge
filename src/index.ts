@@ -39,29 +39,67 @@ async function createRepo() {
 }
 
 async function prepareAndPushFiles(username: string, repoUrl: string) {
+    const mainBranch = "main";
     const branchName = "quickdraw-branch";
     const tempDir = path.join(process.cwd(), options.name);
+
+    if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+
     const git = simpleGit();
 
     console.log("📁 Cloning repo...");
     await git.clone(repoUrl);
     process.chdir(tempDir);
 
-    console.log("🌱 Creating branch...");
-    await git.checkoutLocalBranch(branchName);
+    const localGit = simpleGit();
 
-    console.log("📄 Adding README...");
+    console.log(`🌱 Initializing main branch with initial commit...`);
+    await localGit.checkoutLocalBranch(mainBranch);
+
+    fs.writeFileSync("README.md", `# Initial Commit\nCreated at ${new Date().toISOString()}\n`);
+    await localGit.add("./*");
+    await localGit.commit("Initial commit");
+    await localGit.push("origin", mainBranch);
+
+    console.log(`🌱 Creating branch ${branchName} from ${mainBranch}...`);
+    await localGit.checkoutBranch(branchName, mainBranch);
+
+    console.log("📄 Updating README for Quickdraw badge...");
     fs.writeFileSync("README.md", `# Quickdraw Badge 🚀\nGenerated at ${new Date().toISOString()}\n`);
 
-    await git.add(".");
-    await git.commit("Add README for Quickdraw badge");
-    await git.push("origin", branchName);
+    await localGit.add("./*");
+    await localGit.commit("Add README for Quickdraw badge");
+    await localGit.push("origin", branchName);
 
     return branchName;
 }
 
-async function openPullRequest(username: string, branchName: string) {
-    const prUrl = `https://github.com/${username}/${options.name}/compare/${branchName}?expand=1`;
-    console.log(`🌐 Pull request ready: ${prUrl}`);
-    await open(prUrl);
+async function createPullRequest(username: string, branchName: string) {
+    console.log("📬 Creating pull request...");
+    const { data: pr } = await octokit.rest.pulls.create({
+        owner: username,
+        repo: options.name,
+        title: "Quickdraw badge PR",
+        head: branchName,
+        base: "main",
+        body: "This PR is created to earn the Quickdraw badge.",
+    });
+
+    console.log(`✅ Pull request created: ${pr.html_url}`);
+    await open(pr.html_url);
 }
+
+async function main() {
+    try {
+        const { username, repoUrl } = await createRepo();
+        const branchName = await prepareAndPushFiles(username, repoUrl);
+        await createPullRequest(username, branchName);
+    } catch (err) {
+        console.error("❌ Error:", err);
+        process.exit(1);
+    }
+}
+
+main();
