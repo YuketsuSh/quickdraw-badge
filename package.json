@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "@octokit/rest": "^21.1.1",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "open": "^10.1.2",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/open": "^6.1.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
